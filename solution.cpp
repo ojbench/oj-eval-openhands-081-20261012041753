@@ -1,20 +1,18 @@
 #include <iostream>
 #include <vector>
 #include <queue>
-#include <algorithm>
 #include <cstring>
 using namespace std;
 
 const int MAXN = 3005;
-const int MAXM = 4505;
 
-vector<int> adj[MAXN];
-vector<pair<int, int>> edges;
+int adj[MAXN][4];  // Each node has at most 3 neighbors + sentinel
+int deg[MAXN];
 int parent[MAXN];
 bool visited[MAXN];
-int tempCap[MAXN][MAXN];
+int cap[MAXN][MAXN];
 
-int bfs(int s, int t) {
+int bfs(int s, int t, int n) {
     memset(parent, -1, sizeof(parent));
     memset(visited, false, sizeof(visited));
     
@@ -27,8 +25,9 @@ int bfs(int s, int t) {
         int u = q.front();
         q.pop();
         
-        for (int v : adj[u]) {
-            if (!visited[v] && tempCap[u][v] > 0) {
+        for (int i = 0; i < deg[u]; i++) {
+            int v = adj[u][i];
+            if (!visited[v] && cap[u][v] > 0) {
                 parent[v] = u;
                 visited[v] = true;
                 q.push(v);
@@ -43,27 +42,25 @@ int bfs(int s, int t) {
     return 0;
 }
 
-int maxFlow(int s, int t) {
-    // Reset temporary capacities
-    memset(tempCap, 0, sizeof(tempCap));
-    for (auto& edge : edges) {
-        int u = edge.first, v = edge.second;
-        tempCap[u][v] = 1;
-        tempCap[v][u] = 1;
+int maxFlow(int s, int t, int n) {
+    // Reset capacities
+    memset(cap, 0, sizeof(cap));
+    for (int u = 1; u <= n; u++) {
+        for (int i = 0; i < deg[u]; i++) {
+            int v = adj[u][i];
+            cap[u][v] = 1;
+        }
     }
     
     int flow = 0;
     
-    while (bfs(s, t)) {
-        int pathFlow = 1;
-        
+    while (bfs(s, t, n)) {
         for (int v = t; v != s; v = parent[v]) {
             int u = parent[v];
-            tempCap[u][v] -= pathFlow;
-            tempCap[v][u] += pathFlow;
+            cap[u][v]--;
+            cap[v][u]++;
         }
-        
-        flow += pathFlow;
+        flow++;
     }
     
     return flow;
@@ -76,19 +73,16 @@ int main() {
     int n, m;
     cin >> n >> m;
     
-    // Initialize adjacency list
-    for (int i = 1; i <= n; i++) {
-        adj[i].clear();
-    }
-    edges.clear();
+    // Initialize
+    memset(deg, 0, sizeof(deg));
+    memset(adj, -1, sizeof(adj));
     
     // Read edges
     for (int i = 0; i < m; i++) {
         int u, v;
         cin >> u >> v;
-        adj[u].push_back(v);
-        adj[v].push_back(u);
-        edges.push_back({u, v});
+        adj[u][deg[u]++] = v;
+        adj[v][deg[v]++] = u;
     }
     
     long long totalSum = 0;
@@ -96,7 +90,7 @@ int main() {
     // Calculate max flow for all pairs (a, b) where a < b
     for (int a = 1; a <= n; a++) {
         for (int b = a + 1; b <= n; b++) {
-            int flow = maxFlow(a, b);
+            int flow = maxFlow(a, b, n);
             totalSum += flow;
         }
     }
