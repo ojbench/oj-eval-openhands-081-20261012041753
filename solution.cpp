@@ -41,7 +41,7 @@ bool findPath(int s, int t, int n) {
 
 // Calculate max flow between s and t
 int maxFlow(int s, int t, int n) {
-    // Reset capacities
+    // Reset capacities - use memset for speed
     memset(tempCap, 0, sizeof(tempCap));
     for (int u = 1; u <= n; u++) {
         for (int i = 0; i < deg[u]; i++) {
