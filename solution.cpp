@@ -9,11 +9,12 @@ const int MAXN = 3005;
 const int MAXM = 4505;
 
 vector<int> adj[MAXN];
-int capacity[MAXN][MAXN];
+vector<pair<int, int>> edges;
 int parent[MAXN];
 bool visited[MAXN];
+int tempCap[MAXN][MAXN];
 
-int bfs(int s, int t, int n) {
+int bfs(int s, int t) {
     memset(parent, -1, sizeof(parent));
     memset(visited, false, sizeof(visited));
     
@@ -27,7 +28,7 @@ int bfs(int s, int t, int n) {
         q.pop();
         
         for (int v : adj[u]) {
-            if (!visited[v] && capacity[u][v] > 0) {
+            if (!visited[v] && tempCap[u][v] > 0) {
                 parent[v] = u;
                 visited[v] = true;
                 q.push(v);
@@ -42,16 +43,24 @@ int bfs(int s, int t, int n) {
     return 0;
 }
 
-int maxFlow(int s, int t, int n) {
+int maxFlow(int s, int t) {
+    // Reset temporary capacities
+    memset(tempCap, 0, sizeof(tempCap));
+    for (auto& edge : edges) {
+        int u = edge.first, v = edge.second;
+        tempCap[u][v] = 1;
+        tempCap[v][u] = 1;
+    }
+    
     int flow = 0;
     
-    while (bfs(s, t, n)) {
+    while (bfs(s, t)) {
         int pathFlow = 1;
         
         for (int v = t; v != s; v = parent[v]) {
             int u = parent[v];
-            capacity[u][v] -= pathFlow;
-            capacity[v][u] += pathFlow;
+            tempCap[u][v] -= pathFlow;
+            tempCap[v][u] += pathFlow;
         }
         
         flow += pathFlow;
@@ -67,11 +76,11 @@ int main() {
     int n, m;
     cin >> n >> m;
     
-    // Initialize adjacency list and capacity matrix
+    // Initialize adjacency list
     for (int i = 1; i <= n; i++) {
         adj[i].clear();
     }
-    memset(capacity, 0, sizeof(capacity));
+    edges.clear();
     
     // Read edges
     for (int i = 0; i < m; i++) {
@@ -79,8 +88,7 @@ int main() {
         cin >> u >> v;
         adj[u].push_back(v);
         adj[v].push_back(u);
-        capacity[u][v] = 1;
-        capacity[v][u] = 1;
+        edges.push_back({u, v});
     }
     
     long long totalSum = 0;
@@ -88,17 +96,7 @@ int main() {
     // Calculate max flow for all pairs (a, b) where a < b
     for (int a = 1; a <= n; a++) {
         for (int b = a + 1; b <= n; b++) {
-            // Reset capacities for this pair
-            for (int u = 1; u <= n; u++) {
-                for (int v : adj[u]) {
-                    if (u < v) {
-                        capacity[u][v] = 1;
-                        capacity[v][u] = 1;
-                    }
-                }
-            }
-            
-            int flow = maxFlow(a, b, n);
+            int flow = maxFlow(a, b);
             totalSum += flow;
         }
     }
