@@ -6,20 +6,20 @@ using namespace std;
 
 const int MAXN = 3005;
 
-int adj[MAXN][4];  // Each node has at most 3 neighbors + sentinel
+int adj[MAXN][4];  // Each node has at most 3 neighbors
 int deg[MAXN];
-int parent[MAXN];
 bool visited[MAXN];
-int cap[MAXN][MAXN];
+int parent[MAXN];
+int tempCap[MAXN][MAXN];
 
-int bfs(int s, int t, int n) {
+// Find one augmenting path using BFS
+bool findPath(int s, int t, int n) {
     memset(parent, -1, sizeof(parent));
     memset(visited, false, sizeof(visited));
     
     queue<int> q;
     q.push(s);
     visited[s] = true;
-    parent[s] = -1;
     
     while (!q.empty()) {
         int u = q.front();
@@ -27,38 +27,38 @@ int bfs(int s, int t, int n) {
         
         for (int i = 0; i < deg[u]; i++) {
             int v = adj[u][i];
-            if (!visited[v] && cap[u][v] > 0) {
+            if (!visited[v] && tempCap[u][v] > 0) {
                 parent[v] = u;
                 visited[v] = true;
+                if (v == t) return true;
                 q.push(v);
-                
-                if (v == t) {
-                    return 1;
-                }
             }
         }
     }
     
-    return 0;
+    return false;
 }
 
+// Calculate max flow between s and t
 int maxFlow(int s, int t, int n) {
     // Reset capacities
-    memset(cap, 0, sizeof(cap));
+    memset(tempCap, 0, sizeof(tempCap));
     for (int u = 1; u <= n; u++) {
         for (int i = 0; i < deg[u]; i++) {
             int v = adj[u][i];
-            cap[u][v] = 1;
+            tempCap[u][v] = 1;
         }
     }
     
     int flow = 0;
     
-    while (bfs(s, t, n)) {
+    // Since max degree is 3, max flow is at most 3
+    while (flow < 3 && findPath(s, t, n)) {
+        // Update capacities along the path
         for (int v = t; v != s; v = parent[v]) {
             int u = parent[v];
-            cap[u][v]--;
-            cap[v][u]++;
+            tempCap[u][v]--;
+            tempCap[v][u]++;
         }
         flow++;
     }
@@ -90,8 +90,7 @@ int main() {
     // Calculate max flow for all pairs (a, b) where a < b
     for (int a = 1; a <= n; a++) {
         for (int b = a + 1; b <= n; b++) {
-            int flow = maxFlow(a, b, n);
-            totalSum += flow;
+            totalSum += maxFlow(a, b, n);
         }
     }
     
